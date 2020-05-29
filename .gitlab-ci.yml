@@ -1,0 +1,42 @@
+# Reference: https://docs.gitlab.com/ee/ci/docker/using_docker_build.html
+image: docker:latest
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  #- test
+  - release
+
+variables:
+  DOCKER_DRIVER: overlay
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - docker info
+  - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+build:
+  stage: build
+  #before_script:
+  script:
+    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+
+#test:
+#  stage: test
+#  script:
+#    - docker pull $CONTAINER_TEST_IMAGE
+#    - docker run $CONTAINER_TEST_IMAGE /script/to/run/tests
+
+release-image:
+  stage: release
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
+  tags: 
+    - docker
