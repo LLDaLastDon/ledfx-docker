@@ -2,7 +2,7 @@
 image: docker:latest
 
 services:
-  - docker:dind
+  - docker:19.03.8-dind
 
 stages:
   - build
